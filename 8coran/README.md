@@ -26,7 +26,7 @@ l'adresse du dossier — et rien d'autre dans le thème ne bouge.
 ## Installation
 
 1. Tableau de bord → **Apparence → Thèmes → Ajouter → Téléverser un thème**
-2. Choisir `8coran-1.0.0.zip`, installer, activer.
+2. Choisir `8coran-1.1.0.zip`, installer, activer.
 3. **Réglages → Permaliens** → enregistrer une fois (pour les adresses
    `/recitateur/...` et `/riwaya/...`).
 4. Menu **Récitateurs → Importer** → tout cocher → *Importer la sélection*.
@@ -103,9 +103,38 @@ devient le titre** de la fiche.
   l'écoute » sur l'accueil.
 - **A+** agrandit tout le texte, et le choix est retenu.
 
-**Sans JavaScript**, l'annuaire et les fiches s'affichent normalement et chaque
-sourate reste **un lien direct vers son fichier** : le navigateur l'ouvre avec
-son propre lecteur. Le lecteur du site n'ajoute que le confort.
+### Le téléchargement d'une sourate
+
+Chaque ligne porte un **↓** à droite. Le clic enregistre le fichier — il ne
+l'ouvre pas — sous un nom lisible :
+
+```
+Abdelaziz Al-Ahmad - 001 - Al-Fatihah.mp3
+```
+
+Pendant le transfert le **↓** devient un pourcentage, un deuxième clic annule,
+et la ligne finit par un **✓**. Les caractères refusés par Windows et macOS
+sont retirés du nom, et le nom est borné pour ne pas dépasser la limite du
+système de fichiers.
+
+Deux détails qui expliquent le code :
+
+- L'attribut `download` d'un lien **n'a aucun effet quand le fichier vient d'un
+  autre domaine** : le navigateur l'ignore et se contente d'ouvrir le mp3. Vu
+  dans un vrai navigateur — le clic quittait la fiche, et il fallait un clic
+  droit pour obtenir un fichier appelé `001.mp3`, comme les 113 autres. Le
+  fichier est donc récupéré par le site, puis rendu au navigateur comme un
+  objet local, où `download` est respecté.
+- **Un 200 n'est pas un fichier.** La réponse n'est enregistrée que si elle est
+  d'un type audio et non vide ; sinon le fichier s'ouvre dans un onglet et le
+  bouton le dit, au lieu d'enregistrer une page d'erreur sous un nom en `.mp3`.
+
+La colonne s'enlève d'une case dans **Récitateurs → Réglages**.
+
+**Sans JavaScript**, l'annuaire et les fiches s'affichent normalement, chaque
+sourate reste **un lien direct vers son fichier** — le navigateur l'ouvre avec
+son propre lecteur — et le ↓ reste ce lien direct, à enregistrer d'un clic
+droit. Le lecteur du site et le téléchargement nommé n'ajoutent que le confort.
 
 ---
 
@@ -119,8 +148,8 @@ ligne. Une sourate mal recopiée serait une différence, pas une faute silencieu
 ## Les contrôles
 
 ```
-python3 outils/tests.py             # 45 contrôles : données, pages, recherche, réglages, audio
-python3 outils/essai_navigateur.py  # 26 contrôles dans un vrai navigateur
+python3 outils/tests.py             # 52 contrôles : données, pages, recherche, réglages, noms de fichiers, audio
+python3 outils/essai_navigateur.py  # 33 contrôles dans un vrai navigateur
 python3 outils/essai_import.py      # 8 contrôles : le parcours réel d'installation
 python3 outils/verifier_serveurs.py serveurs.json   # une passe sur toutes les fiches
 ```
@@ -134,6 +163,11 @@ Mesures du dernier passage :
   source, pas du thème ; la fiche est signalée par l'outil de vérification.
 - Le son a été vérifié **en le lisant** dans un navigateur, pas en lisant le
   code : `currentTime` avance, la durée est connue, la sourate suivante charge.
+- Le téléchargement a été vérifié **en téléchargeant** : le fichier arrivé fait
+  709 011 octets, commence par `ID3`, porte le nom
+  `Abdelaziz Al-Ahmad - 001 - Al-Fatihah.mp3` et est **identique octet pour
+  octet** au fichier de la source (même md5). Une réponse HTML servie sous un
+  nom en `.mp3` a été refusée par le contrôle prévu pour ça.
 - Le `.zip` a été installé sur un WordPress **neuf et vide**, puis l'import a
   été fait **par le formulaire du panneau** : 3 fiches créées, et un second
   envoi identique a donné 0 créées / 3 mises à jour.

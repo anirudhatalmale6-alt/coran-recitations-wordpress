@@ -3,7 +3,7 @@ Theme Name: 8Coran
 Theme URI: https://jncorp.example/
 Author: Anirudha Talmale
 Description: Theme autonome pour une compilation de recitations du Coran : un recitateur par fiche, les 114 sourates, un lecteur qui enchaine et qui retient ou l'on s'est arrete. Aucun plugin requis. Les fichiers audio ne sont pas heberges par le theme : ils sont lus chez la source indiquee sur chaque fiche.
-Version: 1.0.0
+Version: 1.1.0
 Requires at least: 6.0
 Requires PHP: 7.4
 License: GPLv2 or later
@@ -410,6 +410,18 @@ html[dir="rtl"] .hc-carte-ar { text-align: right; }
 	border-inline-start: 1px solid var(--trait);
 }
 .hc-dl:hover { background: #f2f6f3; color: var(--vert); }
+
+/* Pendant le telechargement, le signe cede la place au pourcentage : la
+   largeur est donc figee pour que la ligne ne bouge pas. */
+.hc-dl .hc-dl-signe {
+	display: inline-block;
+	min-width: 2.4em;
+	font-variant-numeric: tabular-nums;
+	font-size: .9em;
+}
+.hc-dl.en-cours { background: #f2f6f3; color: var(--vert); font-weight: 600; }
+.hc-dl.fait { color: var(--vert); }
+.hc-dl.echec { color: #a3341f; }
 
 .hc-source {
 	margin: 22px 0 0;

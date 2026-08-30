@@ -120,6 +120,69 @@ def main():
         t('le bouton A+ agrandit le texte', grand)
         page.click('#hc-taille')
 
+        # --- Le telechargement d'une sourate ---------------------------------
+        # Un bouton "telecharger" qui ouvre le fichier au lieu de l'enregistrer
+        # n'est pas un bouton de telechargement. On verifie donc qu'un fichier
+        # arrive VRAIMENT, sous le bon nom, avec les bons octets.
+        import hashlib
+        import urllib.request
+
+        # Les controles precedents ont ramene la page sur l'annuaire.
+        page.goto(BASE + '/', wait_until='domcontentloaded')
+        page.locator('.hc-carte-nom a').first.click()
+        page.wait_for_selector('.hc-sourates')
+        lien_dl = page.locator('.hc-dl').first
+        attendu = lien_dl.get_attribute('data-fichier')
+        source = lien_dl.get_attribute('href')
+        t('le lien de telechargement porte un nom lisible, pas 001.mp3',
+          bool(attendu) and attendu.endswith('.mp3') and attendu != '001.mp3', str(attendu))
+        with page.expect_download(timeout=120000) as attente:
+            lien_dl.click()
+        recu = attente.value
+        chemin = os.path.join(SHOTS, '.telechargement-essai.mp3')
+        recu.save_as(chemin)
+        octets = open(chemin, 'rb').read()
+        t('le clic telecharge le fichier au lieu de l\'ouvrir',
+          recu.suggested_filename == attendu, recu.suggested_filename)
+        t('le fichier telecharge est bien un mp3 non vide',
+          len(octets) > 10000 and octets[:3] in (b'ID3', b'\xff\xfb', b'\xff\xf3'),
+          '%d octets, entete %r' % (len(octets), octets[:3]))
+        origine = urllib.request.urlopen(source, timeout=120).read()
+        t('les octets recus sont ceux de la source',
+          hashlib.md5(octets).hexdigest() == hashlib.md5(origine).hexdigest(),
+          '%d octets chez la source' % len(origine))
+        os.remove(chemin)
+        page.wait_for_timeout(300)
+        t('le bouton dit que c\'est fait',
+          'fait' in (lien_dl.get_attribute('class') or ''), lien_dl.get_attribute('class'))
+        page.screenshot(path=os.path.join(SHOTS, '20-telechargement.png'))
+
+        # Une page d'erreur repond 200 elle aussi : elle ne doit pas etre
+        # enregistree sous un nom en .mp3.
+        page.route('**/*.mp3', lambda route: route.fulfill(
+            status=200, content_type='text/html', body='<html>oups</html>'))
+        page.reload(wait_until='domcontentloaded')
+        page.wait_for_selector('.hc-sourates')
+        faux = page.locator('.hc-dl').nth(1)
+        rien = True
+        try:
+            with page.expect_download(timeout=8000):
+                faux.click()
+            rien = False
+        except Exception:
+            pass
+        t('un 200 qui n\'est pas de l\'audio n\'est pas enregistre', rien)
+        page.wait_for_timeout(500)
+        t('et le bouton le dit au lieu de rester muet',
+          'echec' in (faux.get_attribute('class') or ''), faux.get_attribute('class'))
+        page.unroute('**/*.mp3')
+        # L'echec ouvre le fichier dans un onglet : on le referme.
+        for autre in ctx.pages:
+            if autre is not page:
+                autre.close()
+        page.reload(wait_until='domcontentloaded')
+        page.wait_for_selector('.hc-sourates')
+
         # --- Le telephone ---------------------------------------------------
         tel = ctx.new_page()
         tel.set_viewport_size({'width': 390, 'height': 800})

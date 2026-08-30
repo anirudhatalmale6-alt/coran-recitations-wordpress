@@ -9,7 +9,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'HUITCORAN_VERSION', '1.0.0' );
+define( 'HUITCORAN_VERSION', '1.1.0' );
 
 require_once get_template_directory() . '/inc/sourates.php';
 require_once get_template_directory() . '/inc/langue.php';
@@ -139,6 +139,38 @@ function huitcoran_url_sourate( $serveur, $numero ) {
 }
 
 /**
+ * Le nom sous lequel une sourate arrive dans le dossier de telechargement.
+ *
+ * Chez la source, tous les fichiers s'appellent 001.mp3 : telecharger dix
+ * sourates de deux recitateurs donne dix fichiers qui s'ecrasent l'un l'autre
+ * et qui ne disent plus qui recite quoi. On reecrit donc le nom.
+ *
+ * Les caracteres refuses par Windows et macOS sont remplaces, pas supprimes,
+ * et le nom est borne : au-dela de 255 octets, l'enregistrement echoue.
+ */
+function huitcoran_nom_fichier( $recitateur, $numero, $titre ) {
+	// Les morceaux sont assembles, pas concatenes : une fiche sans titre
+	// donnait « - 003.mp3 », un tiret orphelin en tete de nom.
+	$bouts = array( trim( (string) $recitateur ), sprintf( '%03d', (int) $numero ), trim( (string) $titre ) );
+	$nom   = implode( ' - ', array_filter( $bouts, 'strlen' ) );
+	$nom = str_replace( array( '/', '\\', ':', '*', '?', '"', '<', '>', '|' ), ' ', $nom );
+	$nom = preg_replace( '/[\x00-\x1f\x7f]+/', '', $nom );
+	$nom = preg_replace( '/\s+/u', ' ', $nom );
+	// Un nom qui finit par un point ou une espace est refuse sous Windows.
+	$nom = trim( $nom, " ." );
+	if ( function_exists( 'mb_substr' ) ) {
+		$nom = mb_substr( $nom, 0, 120, 'UTF-8' );
+	} else {
+		$nom = substr( $nom, 0, 120 );
+	}
+	$nom = trim( $nom, " ." );
+	if ( '' === $nom ) {
+		$nom = sprintf( '%03d', (int) $numero );
+	}
+	return $nom . '.mp3';
+}
+
+/**
  * Les numeros de sourates d'un recitateur, dans l'ordre, sans doublon.
  * Un champ vide veut dire les 114.
  */
@@ -185,6 +217,11 @@ function huitcoran_assets() {
 			'repeter_non' => $l['repeter_non'],
 			'repeter_une' => $l['repeter_une'],
 			'repeter_tout' => $l['repeter_tout'],
+			'telecharger' => $l['telecharger'],
+			'dl_annuler'  => $l['dl_annuler'],
+			'dl_en_cours' => $l['dl_en_cours'],
+			'dl_fait'     => $l['dl_fait'],
+			'dl_echec'    => $l['dl_echec'],
 		)
 	);
 }

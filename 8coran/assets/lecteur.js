@@ -261,10 +261,134 @@
 		} );
 	}
 
+	/* ------------------------------------------------------------------ */
+	/* Le telechargement d'une sourate                                      */
+	/* ------------------------------------------------------------------ */
+	/*
+	 * L'attribut download d'un lien n'a AUCUN effet quand le fichier vient
+	 * d'un autre domaine : le navigateur l'ignore en silence et se contente
+	 * d'ouvrir le mp3. Verifie dans un vrai navigateur : le clic quittait la
+	 * fiche pour la source, et il fallait un clic droit pour obtenir un
+	 * fichier - nomme 001.mp3, comme les 113 autres.
+	 *
+	 * On recupere donc le fichier nous-memes et on le rend au navigateur
+	 * comme un objet local, ou download est respecte. La source autorise la
+	 * lecture depuis un autre domaine ; si un jour elle ne l'autorise plus,
+	 * le lien d'origine s'ouvre a la place et rien n'est perdu.
+	 */
+
+	function etiquette( lien, texte, aria ) {
+		var signe = lien.querySelector( '.hc-dl-signe' );
+		if ( signe ) { signe.textContent = texte; }
+		lien.setAttribute( 'aria-label', aria );
+		lien.setAttribute( 'title', aria );
+	}
+
+	function remettre( lien ) {
+		lien.classList.remove( 'en-cours' );
+		etiquette( lien, '↓', lien.getAttribute( 'data-dit' ) || txt( 'telecharger', 'Télécharger' ) );
+	}
+
+	function enregistrer( blob, nom ) {
+		var url = window.URL.createObjectURL( blob );
+		var a = document.createElement( 'a' );
+		a.href = url;
+		a.download = nom;
+		document.body.appendChild( a );
+		a.click();
+		document.body.removeChild( a );
+		// Revoquer tout de suite couperait l'enregistrement en cours.
+		window.setTimeout( function () { window.URL.revokeObjectURL( url ); }, 60000 );
+	}
+
+	function avecProgression( rep, lien ) {
+		var total = parseInt( rep.headers.get( 'content-length' ) || '0', 10 );
+		if ( ! total || ! rep.body || ! rep.body.getReader ) {
+			return rep.blob();
+		}
+		var lecteur = rep.body.getReader();
+		var morceaux = [];
+		var recu = 0;
+		return ( function pomper() {
+			return lecteur.read().then( function ( r ) {
+				if ( r.done ) {
+					return new Blob( morceaux, { type: 'audio/mpeg' } );
+				}
+				morceaux.push( r.value );
+				recu += r.value.length;
+				etiquette( lien, Math.round( ( recu / total ) * 100 ) + '%',
+					txt( 'dl_annuler', 'Annuler' ) );
+				return pomper();
+			} );
+		} )();
+	}
+
+	function poserTelechargements() {
+		var liens = document.querySelectorAll( '.hc-dl' );
+		if ( ! liens.length ) { return; }
+		// Sans fetch ni Blob, on ne touche a rien : le lien d'origine suffit.
+		if ( ! window.fetch || ! window.URL || ! window.URL.createObjectURL ) { return; }
+
+		Array.prototype.forEach.call( liens, function ( lien ) {
+			lien.setAttribute( 'data-dit', lien.getAttribute( 'aria-label' ) || '' );
+
+			lien.addEventListener( 'click', function ( ev ) {
+				// Ctrl/Cmd/clic du milieu : c'est le navigateur qui decide.
+				if ( ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey ) { return; }
+				ev.preventDefault();
+
+				// Un deuxieme clic pendant le telechargement l'annule.
+				if ( lien.hcCtrl ) {
+					lien.hcCtrl.abort();
+					return;
+				}
+
+				var ctrl = window.AbortController ? new window.AbortController() : null;
+				lien.hcCtrl = ctrl;
+				lien.classList.remove( 'fait', 'echec' );
+				lien.classList.add( 'en-cours' );
+				etiquette( lien, '…', txt( 'dl_annuler', 'Annuler' ) );
+
+				window.fetch( lien.href, ctrl ? { signal: ctrl.signal } : undefined )
+					.then( function ( rep ) {
+						// Un 200 n'est pas un fichier : une page d'erreur repond 200
+						// elle aussi, et elle s'enregistrerait sous un nom en .mp3.
+						var type = rep.headers.get( 'content-type' ) || '';
+						if ( ! rep.ok || type.indexOf( 'audio' ) === -1 ) {
+							throw new Error( 'reponse ' + rep.status + ' ' + type );
+						}
+						return avecProgression( rep, lien );
+					} )
+					.then( function ( blob ) {
+						if ( ! blob || ! blob.size ) { throw new Error( 'fichier vide' ); }
+						enregistrer( blob, lien.getAttribute( 'data-fichier' ) ||
+							lien.href.split( '/' ).pop() );
+						lien.classList.remove( 'en-cours' );
+						lien.classList.add( 'fait' );
+						etiquette( lien, '✓', txt( 'dl_fait', 'Téléchargée' ) );
+					} )
+					.catch( function ( e ) {
+						lien.classList.remove( 'en-cours' );
+						if ( e && 'AbortError' === e.name ) {
+							remettre( lien );
+							return;
+						}
+						// Porte de sortie : le fichier s'ouvre, l'utilisateur
+						// garde la main. Mieux qu'un bouton qui ne fait rien.
+						lien.classList.add( 'echec' );
+						etiquette( lien, '↗', txt( 'dl_echec', 'Téléchargement impossible' ) );
+						window.open( lien.href, '_blank', 'noopener' );
+					} )
+					.then( function () { lien.hcCtrl = null; } );
+			} );
+		} );
+	}
+
 	function demarrer() {
 		poserTaille();
 		poserReprise();
 		poserLecteur();
+		poserTelechargements();
 	}
 
 	if ( 'loading' === document.readyState ) {

@@ -127,9 +127,16 @@ while ( have_posts() ) :
 						</span>
 					</a>
 					<?php if ( $montrer_dl ) : ?>
-						<a class="hc-dl" href="<?php echo esc_url( $url ); ?>" download
+						<?php
+						// Le nom est calcule ici, pas dans le navigateur : le titre de la
+						// sourate et le nom du recitateur sont connus du serveur, et le
+						// meme nom sert au script et au clic droit.
+						$fichier = huitcoran_nom_fichier( get_the_title(), $n, $s['tr'] );
+						?>
+						<a class="hc-dl" href="<?php echo esc_url( $url ); ?>" download="<?php echo esc_attr( $fichier ); ?>"
+							data-fichier="<?php echo esc_attr( $fichier ); ?>"
 							title="<?php echo esc_attr( hc_t( 'telecharger' ) ); ?>"
-							aria-label="<?php echo esc_attr( hc_t( 'telecharger' ) . ' ' . $s['tr'] ); ?>">↓</a>
+							aria-label="<?php echo esc_attr( hc_t( 'telecharger' ) . ' ' . $s['tr'] ); ?>"><span class="hc-dl-signe">↓</span></a>
 					<?php endif; ?>
 				</li>
 			<?php endforeach; ?>

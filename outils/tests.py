@@ -263,6 +263,40 @@ def controler_reglages():
 
 
 # --------------------------------------------------------------------- #
+# 5 bis. Le nom du fichier telecharge                                    #
+# --------------------------------------------------------------------- #
+
+def controler_nom_fichier():
+    """Chez la source tout s'appelle 001.mp3 : le nom est reecrit ici.
+
+    Un nom de fichier n'est pas une chaine libre - il traverse trois systemes
+    de fichiers qui n'acceptent pas les memes caracteres.
+    """
+    url = wp('$p = get_posts(array("post_type"=>"recitateur","posts_per_page"=>1)); echo get_permalink($p[0]);')
+    _, fiche = obtenir(url.replace(BASE, ''))
+    noms = re.findall(r'data-fichier="([^"]+)"', fiche)
+    t('chaque sourate propose un nom de fichier', len(noms) > 100, '%d noms' % len(noms))
+    t('le nom porte le recitateur, le numero et la sourate',
+      bool(noms) and ' - 001 - ' in noms[0] and noms[0].endswith('.mp3'),
+      noms[0] if noms else '')
+    t('deux sourates ne portent pas le meme nom',
+      len(set(noms)) == len(noms), '%d noms, %d distincts' % (len(noms), len(set(noms))))
+    t('le nom est aussi dans l’attribut download (clic droit compris)',
+      fiche.count('download="') == len(noms))
+
+    sale = wp('echo huitcoran_nom_fichier("A/B: le \\"grand\\" | x?", 7, "Al-A\'raf");')
+    t('les caracteres refuses par Windows sont retires du nom',
+      not any(c in sale for c in '/\\:*?"<>|') and ' - 007 - ' in sale, sale)
+
+    long = wp('echo huitcoran_nom_fichier(str_repeat("Mohammed ", 40), 114, "An-Nas");')
+    t('un nom trop long est borne', 0 < len(long.encode('utf-8')) <= 255,
+      '%d octets' % len(long.encode('utf-8')))
+
+    vide = wp('echo huitcoran_nom_fichier("", 3, "");')
+    t('un nom vide retombe sur le numero', vide == '003.mp3', vide)
+
+
+# --------------------------------------------------------------------- #
 # 6. Les fichiers repondent vraiment chez la source                      #
 # --------------------------------------------------------------------- #
 
@@ -291,6 +325,7 @@ def main():
     controler_pages()
     controler_recherche()
     controler_reglages()
+    controler_nom_fichier()
     controler_audio()
     rates = [r for r in resultats if not r[1]]
     print('\n%d controles, %d verts, %d rouges'
