@@ -1,0 +1,452 @@
+/*
+Theme Name: 8Coran
+Theme URI: https://jncorp.example/
+Author: Anirudha Talmale
+Description: Theme autonome pour une compilation de recitations du Coran : un recitateur par fiche, les 114 sourates, un lecteur qui enchaine et qui retient ou l'on s'est arrete. Aucun plugin requis. Les fichiers audio ne sont pas heberges par le theme : ils sont lus chez la source indiquee sur chaque fiche.
+Version: 1.0.0
+Requires at least: 6.0
+Requires PHP: 7.4
+License: GPLv2 or later
+Text Domain: huitcoran
+*/
+
+/* --------------------------------------------------------------------- */
+/* Les bases. Ecrit en proprietes logiques : la meme feuille sert le       */
+/* francais et l'arabe, qui se lit de droite a gauche.                     */
+/* --------------------------------------------------------------------- */
+
+:root {
+	--fond: #f6f3ea;
+	--carte: #ffffff;
+	--encre: #1b2320;
+	--doux: #5d6b64;
+	--vert: #14503c;
+	--vert-clair: #1d6b50;
+	--or: #a5822c;
+	--trait: #e2ddcf;
+	--rayon: 12px;
+	--corps: 17px;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+	margin: 0;
+	background: var(--fond);
+	color: var(--encre);
+	font: var(--corps)/1.6 "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body.hc-grand { --corps: 21px; }
+
+a { color: var(--vert); }
+
+/* Une seule pile de polices arabes, nommee une fois. */
+[lang="ar"],
+html[lang="ar"] body {
+	font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic",
+		"Traditional Arabic", "Segoe UI", sans-serif;
+}
+
+h1, h2, h3 { line-height: 1.25; margin: 0 0 12px; }
+
+h1 { font-size: 2em; }
+
+.hc-bande {
+	max-width: 1080px;
+	margin: 0 auto;
+	padding: 0 20px;
+}
+
+.hc-lu {
+	position: absolute;
+	width: 1px; height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
+.hc-evitement {
+	position: absolute;
+	inset-inline-start: -9999px;
+	background: var(--vert);
+	color: #fff;
+	padding: 10px 16px;
+}
+.hc-evitement:focus { inset-inline-start: 10px; top: 10px; z-index: 100; }
+
+/* --------------------------------------------------------------------- */
+/* L'en-tete                                                              */
+/* --------------------------------------------------------------------- */
+
+.hc-entete {
+	background: var(--vert);
+	color: #fff;
+	border-bottom: 4px solid var(--or);
+}
+
+.hc-entete .hc-bande {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
+	padding-top: 16px;
+	padding-bottom: 16px;
+}
+
+.hc-marque { color: #fff; text-decoration: none; display: block; }
+.hc-marque-nom { display: block; font-size: 1.4em; font-weight: 700; letter-spacing: .01em; }
+.hc-marque-desc { display: block; font-size: .85em; opacity: .8; }
+
+.hc-nav { display: flex; align-items: center; gap: 18px; }
+.hc-nav a { color: #fff; text-decoration: none; font-weight: 600; }
+.hc-nav a:hover { text-decoration: underline; }
+.hc-nav ul { display: flex; gap: 18px; list-style: none; margin: 0; padding: 0; }
+
+.hc-taille {
+	background: transparent;
+	border: 1px solid rgba(255,255,255,.6);
+	color: #fff;
+	border-radius: 999px;
+	padding: 4px 12px;
+	cursor: pointer;
+	font-size: .95em;
+}
+.hc-taille[aria-pressed="true"] { background: var(--or); border-color: var(--or); }
+
+/* --------------------------------------------------------------------- */
+/* L'annuaire                                                             */
+/* --------------------------------------------------------------------- */
+
+.hc-page { padding: 28px 0 60px; }
+
+.hc-tete { margin-bottom: 18px; }
+.hc-intro { color: var(--doux); max-width: 62ch; }
+.hc-compte { color: var(--doux); margin: 6px 0 0; }
+
+.hc-reprise {
+	background: #fff8e6;
+	border: 1px solid #e8d9a8;
+	border-radius: var(--rayon);
+	padding: 14px 18px;
+	margin: 0 0 20px;
+}
+.hc-reprise h2 { font-size: 1em; margin: 0 0 8px; color: var(--doux); font-weight: 600; }
+
+.hc-filtres {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+	align-items: center;
+	margin: 0 0 14px;
+}
+.hc-filtres input[type="search"],
+.hc-filtres select {
+	font: inherit;
+	padding: 10px 12px;
+	border: 1px solid var(--trait);
+	border-radius: 8px;
+	background: #fff;
+	min-width: 200px;
+	flex: 1 1 220px;
+}
+.hc-filtres select { flex: 0 1 260px; }
+
+.hc-bouton {
+	display: inline-block;
+	background: var(--vert);
+	color: #fff;
+	border: 0;
+	border-radius: 8px;
+	padding: 10px 18px;
+	font: inherit;
+	font-weight: 600;
+	text-decoration: none;
+	cursor: pointer;
+}
+.hc-bouton:hover { background: var(--vert-clair); }
+
+.hc-alphabet {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0 0 22px;
+}
+.hc-alphabet a {
+	display: inline-block;
+	padding: 5px 11px;
+	border: 1px solid var(--trait);
+	border-radius: 6px;
+	background: #fff;
+	text-decoration: none;
+	font-size: .95em;
+}
+.hc-alphabet a.actif { background: var(--vert); color: #fff; border-color: var(--vert); }
+
+.hc-grille {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+	gap: 16px;
+}
+
+.hc-carte {
+	background: var(--carte);
+	border: 1px solid var(--trait);
+	border-radius: var(--rayon);
+	padding: 18px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.hc-carte-nom { font-size: 1.15em; margin: 0; }
+.hc-carte-nom a { text-decoration: none; color: var(--encre); }
+.hc-carte-nom a:hover { color: var(--vert); }
+.hc-carte-ar {
+	margin: 0;
+	font-size: 1.25em;
+	font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic", "Traditional Arabic", serif;
+	color: var(--vert);
+}
+/* dir="rtl" est necessaire au rendu du nom arabe, mais il alignait le nom
+   a l'oppose du titre. L'alignement suit donc la page, pas le mot. */
+html[dir="ltr"] .hc-nom-ar,
+html[dir="ltr"] .hc-carte-ar { text-align: left; }
+html[dir="rtl"] .hc-nom-ar,
+html[dir="rtl"] .hc-carte-ar { text-align: right; }
+
+.hc-nom-ar {
+	margin: 0 0 8px;
+	font-size: 1.6em;
+	font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic", "Traditional Arabic", serif;
+	color: var(--vert);
+}
+.hc-carte-latin { margin: 0; color: var(--doux); font-size: .95em; }
+.hc-nom-latin { margin: 0 0 8px; color: var(--doux); font-size: 1.05em; }
+.hc-carte-moshaf { margin: 0; color: var(--doux); font-size: .9em; }
+.hc-carte-compte { margin: 0; }
+.hc-carte-lien { margin-top: auto; align-self: flex-start; }
+
+.hc-pastille {
+	display: inline-block;
+	background: #eef2ef;
+	color: var(--doux);
+	border-radius: 999px;
+	padding: 3px 12px;
+	font-size: .82em;
+	text-decoration: none;
+}
+.hc-pastille.complet { background: #e8f3ec; color: var(--vert); font-weight: 600; }
+
+.hc-pagination { margin: 26px 0 0; }
+.hc-pagination .page-numbers {
+	display: inline-block;
+	padding: 7px 12px;
+	border: 1px solid var(--trait);
+	border-radius: 6px;
+	background: #fff;
+	text-decoration: none;
+	margin-inline-end: 4px;
+}
+.hc-pagination .current { background: var(--vert); color: #fff; border-color: var(--vert); }
+
+.hc-vide {
+	background: #fff;
+	border: 1px dashed var(--trait);
+	border-radius: var(--rayon);
+	padding: 26px;
+	color: var(--doux);
+}
+
+/* --------------------------------------------------------------------- */
+/* La page d'un recitateur                                                 */
+/* --------------------------------------------------------------------- */
+
+.hc-fil { margin: 0 0 10px; }
+.hc-fil a { text-decoration: none; color: var(--doux); }
+
+.hc-tete-recitateur { border-bottom: 1px solid var(--trait); padding-bottom: 16px; }
+.hc-sous-titre { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; color: var(--doux); margin: 0; }
+
+.hc-lecteur {
+	position: sticky;
+	top: 0;
+	z-index: 20;
+	background: var(--vert);
+	color: #fff;
+	border-radius: var(--rayon);
+	padding: 14px 18px;
+	margin: 18px 0 22px;
+	box-shadow: 0 6px 18px rgba(0,0,0,.12);
+}
+
+.hc-en-cours {
+	margin: 0 0 10px;
+	display: flex;
+	gap: 12px;
+	align-items: baseline;
+	flex-wrap: wrap;
+	min-height: 1.6em;
+}
+.hc-en-cours-num {
+	background: rgba(255,255,255,.16);
+	border-radius: 6px;
+	padding: 1px 10px;
+	font-variant-numeric: tabular-nums;
+}
+.hc-en-cours-ar { font-size: 1.5em; font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic", "Traditional Arabic", serif; }
+.hc-en-cours-tr { opacity: .85; }
+
+.hc-commandes {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.hc-cmd {
+	background: rgba(255,255,255,.14);
+	color: #fff;
+	border: 0;
+	border-radius: 999px;
+	width: 44px;
+	height: 44px;
+	font-size: 1.1em;
+	cursor: pointer;
+	line-height: 1;
+}
+.hc-cmd:hover { background: rgba(255,255,255,.28); }
+.hc-cmd-lire { width: 56px; height: 56px; font-size: 1.4em; background: var(--or); }
+.hc-cmd-lire:hover { background: #c39b34; }
+.hc-cmd-rep {
+	width: auto;
+	height: 38px;
+	padding: 0 16px;
+	font-size: .9em;
+	font-family: inherit;
+}
+.hc-cmd-rep.actif { background: var(--or); }
+
+.hc-barre {
+	flex: 1 1 160px;
+	accent-color: var(--or);
+	min-width: 120px;
+}
+.hc-temps { font-variant-numeric: tabular-nums; font-size: .9em; opacity: .9; min-width: 44px; text-align: center; }
+
+.hc-erreur {
+	margin: 10px 0 0;
+	background: #7c2626;
+	border-radius: 8px;
+	padding: 8px 12px;
+	font-size: .92em;
+}
+
+.hc-sourates { list-style: none; margin: 0; padding: 0; }
+
+.hc-sourate {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	background: var(--carte);
+	border: 1px solid var(--trait);
+	border-radius: 10px;
+	margin-bottom: 8px;
+	overflow: hidden;
+}
+.hc-sourate.en-cours { border-color: var(--or); box-shadow: inset 4px 0 0 var(--or); }
+
+.hc-sourate-lien {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 12px 16px;
+	text-decoration: none;
+	color: inherit;
+}
+.hc-sourate-lien:hover { background: #f2f6f3; }
+
+.hc-num {
+	flex: 0 0 44px;
+	height: 44px;
+	border-radius: 50%;
+	background: #eef2ef;
+	color: var(--vert);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+.hc-sourate.en-cours .hc-num { background: var(--vert); color: #fff; }
+
+.hc-noms { flex: 1; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.hc-ar {
+	font-size: 1.45em;
+	font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic", "Traditional Arabic", serif;
+}
+.hc-tr { font-weight: 600; }
+.hc-fr { color: var(--doux); font-size: .92em; }
+
+.hc-meta { display: flex; gap: 12px; color: var(--doux); font-size: .84em; flex-wrap: wrap; }
+
+.hc-dl {
+	flex: 0 0 auto;
+	width: 42px;
+	text-align: center;
+	color: var(--doux);
+	text-decoration: none;
+	font-size: 1.2em;
+	align-self: stretch;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-inline-start: 1px solid var(--trait);
+}
+.hc-dl:hover { background: #f2f6f3; color: var(--vert); }
+
+.hc-source {
+	margin: 22px 0 0;
+	color: var(--doux);
+	font-size: .9em;
+	background: #fff;
+	border: 1px solid var(--trait);
+	border-radius: var(--rayon);
+	padding: 14px 18px;
+}
+
+/* --------------------------------------------------------------------- */
+/* Le pied de page                                                        */
+/* --------------------------------------------------------------------- */
+
+.hc-pied {
+	background: #10241d;
+	color: #cfd8d3;
+	padding: 26px 0;
+	font-size: .9em;
+}
+.hc-pied-note { margin: 0 0 6px; max-width: 70ch; }
+.hc-pied-nom { margin: 0; opacity: .7; }
+
+/* --------------------------------------------------------------------- */
+/* Le telephone                                                           */
+/* --------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+	:root { --corps: 16px; }
+	h1 { font-size: 1.6em; }
+	.hc-entete .hc-bande { flex-direction: column; align-items: flex-start; }
+	.hc-sourate-lien { flex-wrap: wrap; gap: 8px; padding: 12px; }
+	.hc-noms { gap: 8px; }
+	.hc-meta { width: 100%; }
+	.hc-cmd { width: 40px; height: 40px; }
+	.hc-cmd-lire { width: 48px; height: 48px; }
+	.hc-temps { min-width: 38px; }
+	.hc-lecteur { padding: 12px; }
+}
