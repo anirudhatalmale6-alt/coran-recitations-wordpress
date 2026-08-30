@@ -26,7 +26,7 @@ l'adresse du dossier — et rien d'autre dans le thème ne bouge.
 ## Installation
 
 1. Tableau de bord → **Apparence → Thèmes → Ajouter → Téléverser un thème**
-2. Choisir `8coran.zip`, installer, activer.
+2. Choisir `8coran-1.0.0.zip`, installer, activer.
 3. **Réglages → Permaliens** → enregistrer une fois (pour les adresses
    `/recitateur/...` et `/riwaya/...`).
 4. Menu **Récitateurs → Importer** → tout cocher → *Importer la sélection*.

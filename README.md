@@ -6,7 +6,7 @@ s'est arrêté. Interface **française, arabe (droite à gauche) ou anglaise**.
 
 ## À installer
 
-`8coran.zip` → Apparence → Thèmes → Ajouter → Téléverser un thème → activer,
+`8coran-1.0.0.zip` → Apparence → Thèmes → Ajouter → Téléverser un thème → activer,
 puis **Réglages → Permaliens** (enregistrer une fois), puis
 **Récitateurs → Importer**.
 
@@ -15,7 +15,7 @@ puis **Réglages → Permaliens** (enregistrer une fois), puis
 | Dossier | Contenu |
 |---|---|
 | `8coran/` | le thème (source) — sa documentation complète est dans `8coran/README.md` |
-| `8coran.zip` | le même thème, prêt à téléverser dans WordPress |
+| `8coran-1.0.0.zip` | le même thème, prêt à téléverser dans WordPress |
 | `outils/` | le générateur des 114 sourates et les trois jeux de contrôles |
 | `donnees/` | les instantanés JSON de l'API publique mp3quran.net qui servent de référence |
 | `apercus/` | captures d'écran |
