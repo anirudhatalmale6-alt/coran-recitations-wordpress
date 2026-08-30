@@ -121,6 +121,7 @@ ligne. Une sourate mal recopiée serait une différence, pas une faute silencieu
 ```
 python3 outils/tests.py             # 45 contrôles : données, pages, recherche, réglages, audio
 python3 outils/essai_navigateur.py  # 26 contrôles dans un vrai navigateur
+python3 outils/essai_import.py      # 8 contrôles : le parcours réel d'installation
 python3 outils/verifier_serveurs.py serveurs.json   # une passe sur toutes les fiches
 ```
 
@@ -133,6 +134,9 @@ Mesures du dernier passage :
   source, pas du thème ; la fiche est signalée par l'outil de vérification.
 - Le son a été vérifié **en le lisant** dans un navigateur, pas en lisant le
   code : `currentTime` avance, la durée est connue, la sourate suivante charge.
+- Le `.zip` a été installé sur un WordPress **neuf et vide**, puis l'import a
+  été fait **par le formulaire du panneau** : 3 fiches créées, et un second
+  envoi identique a donné 0 créées / 3 mises à jour.
 
 ## Compatibilité
 
